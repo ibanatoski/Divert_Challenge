@@ -19,6 +19,14 @@ Build a web-based tool to visualize the imported data.
 3. Include charts/graphics that demonstrate the performance of stores compared to each other.
 4. Displays should update when the user changes the start/end dates (either automatically or on a button or refresh).
 
+## UI tool
+  - line graph that changes with dates selected
+    - each line represents a store
+    - x - date
+    - y - total_weight
+  - bar chart
+    - each bar is a day
+
 
 ## Presentation
 The final part of this project is to present your product to us for a walk-through of your UI and code, and a discussion of your methods.

@@ -1,0 +1,19 @@
+.line-data-page{
+
+}
+.line-data{
+  text-align: center;
+  padding: 20px;
+}
+.bottom-top{
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+.bottom-data-line{
+}
+.top-data-line{
+}
+.select-data-line{
+
+}
