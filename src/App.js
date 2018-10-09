@@ -88,6 +88,7 @@ class App extends Component {
 
         dataByStore.forEach( (store) => {
           var stepTotal = 0;
+          var stepScore = 0;
           store.values_by_date.forEach( (date) => {
             var total = 0;
             date.values.forEach( (entry) => {
@@ -97,7 +98,7 @@ class App extends Component {
             date.total = total;
             date.step_total = stepTotal;
             date.sales_total_month = +salesHashMap[store.key];
-            date.score = total / +salesHashMap[store.key];
+            date.score = (stepTotal / +salesHashMap[store.key]) * 100;
           });
         });
 
@@ -108,18 +109,19 @@ class App extends Component {
           .entries(data);
 
         dataByDate.forEach((d) => {
-          d.vals = d3.nest().key(function(d) { return d.store; })
+          d.store_day_totals = d3.nest().key(function(d) { return d.store; })
           .entries(d.values);
         });
 
         dataByDate.forEach((d) => {
-          d.vals.forEach( (d) => {
+          d.store_day_totals.forEach( (store) => {
             var total = 0;
-            d.values.forEach((val) => {
+            store.values.forEach((val) => {
               total += val.bale_weight_lbs;
             });
-            d.store = parseInt(d.key);
-            d.total_weight = total;
+            store.color = colorScale(parseInt(store.store))
+            store.store = parseInt(store.key);
+            store.total = total;
           });
         });
 
@@ -135,19 +137,22 @@ class App extends Component {
 
         var dataByDateHashMap = {};
         dataByDate.forEach((d) => {
+          dataByDateHashMap[d.key]={ ...d, storeHashMap: {} };
+          d.storeHashMap = {};
           var total = 0;
           d.values.forEach((val) => {
+            dataByDateHashMap[d.key].storeHashMap[`${val.store}`] = val;
+            d.storeHashMap[`${val.store}`] = val;
             total += val.bale_weight_lbs;
           });
 
           d.total = total;
-
-          dataByDateHashMap[d.key]={ ...d, total: +total };
+          dataByDateHashMap[d.key].dayTotal= total;
         });
 
         sales.forEach( (d) => {
           dataByStoreHashMap[d.store].sales = d.sales;
-          dataByStoreHashMap[d.store].score = (dataByStoreHashMap[d.store].total / d.sales)? (dataByStoreHashMap[d.store].total / d.sales) : 0;
+          dataByStoreHashMap[d.store].score = (dataByStoreHashMap[d.store].total / d.sales)? (dataByStoreHashMap[d.store].total / d.sales) * 100 : 0;
         });
 
         var output = [];
@@ -190,9 +195,7 @@ class App extends Component {
   }
 
   render() {
-    console.log("data", this.state.data);
-
-    const { storeNames, dataByStore, data, dataByDate, dataByStoreHashMap } = this.state;
+    const { storeNames, dataByStore, data, dataByDate, dataByStoreHashMap, dataByDateHashMap } = this.state;
 
     return (
       <div className="App">

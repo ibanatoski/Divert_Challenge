@@ -15,7 +15,7 @@ class BarChartMonth extends Component {
 
   componentDidUpdate(prevProps, prevState){
     if(prevProps.dataByStore !== this.props.dataByStore){
-      console.log("data loaded", this.props.dataByStore);
+      //console.log("data loaded", this.props.dataByStore);
       this.setState({
         storeSelected: this.props.dataByStore["1"]
       });
@@ -24,7 +24,7 @@ class BarChartMonth extends Component {
 
   renderBar(data, storeName){
 
-    console.log('store data', storeName, data);
+    //console.log('store data', storeName, data);
 
     var margin = {top: 20, right: 40, bottom: 60, left: 100},
     width = Math.max((data.length * 10) - margin.left - margin.right, 500),

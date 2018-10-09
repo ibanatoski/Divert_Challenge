@@ -25,7 +25,7 @@ class LineGraph extends Component {
 
   componentDidUpdate(prevProps, prevState){
     if(prevProps.dataByDate !== this.props.dataByDate){
-      console.log("data loaded", this.props.dataByDate);
+      //console.log("data loaded", this.props.dataByDate);
       var date_extent = d3.extent(this.props.data, (d) => new Date(d.date_seen) );
       this.setState({
         date_extent: date_extent
@@ -41,7 +41,7 @@ class LineGraph extends Component {
     });
 
     d3.select("#frequency-data > svg").remove();
-    console.log("renderLineGraph", data, dataByStore, extent);
+    //console.log("renderLineGraph", data, dataByStore, extent);
 
 
     var margin = {top: 20, right: 40, bottom: 30, left: 50},
@@ -86,7 +86,6 @@ class LineGraph extends Component {
     .append("g")
     .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-    console.log("svg", svg);
 
     //X Axis Text
     svg.append("g")
@@ -135,7 +134,7 @@ class LineGraph extends Component {
   }
 
   handleChange = (pagination, filters, sorter) => {
-    console.log('Various parameters', pagination, filters, sorter);
+    //console.log('Various parameters', pagination, filters, sorter);
     this.setState({
       filteredInfo: filters,
       sortedInfo: sorter,

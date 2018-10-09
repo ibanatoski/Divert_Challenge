@@ -2,9 +2,8 @@ import React, { Component } from "react";
 import * as d3 from "d3";
 import "./LineGraph.css";
 
-import moment from 'moment';
+import { XYFrame } from "semiotic";
 
-const dateFormat = 'YYYY/MM/DD';
 var d3ScaleChromatic = require("d3-scale-chromatic");
 
 class LineGraph extends Component {
@@ -15,8 +14,30 @@ class LineGraph extends Component {
       sortedInfo: null,
       startValue: null,
       endValue: null,
-      endOpen: false
+      endOpen: false,
+      topData: null,
+      bottomData: null,
+      dataByStore: null
     };
+  }
+
+  componentDidMount(){
+  }
+
+  componentDidUpdate (prevProps, prevState){
+    //console.log('Component did Update', this.props.selectedStores);
+    if(this.props.topData && this.props.topData.length > 0){
+      this.renderLineGraph(this.props.topData, "#top-data-line");
+    }
+
+    if(this.props.bottomData && this.props.bottomData.length > 0){
+      this.renderLineGraph(this.props.bottomData, "#bottom-data-line");
+    }
+
+    if(this.props.selectedStores && this.props.selectedStores.length > 0){
+      d3.select("#select-data-line").html("");
+      this.renderInteractiveLineGraph(this.props.selectedStores, "#select-data-line");
+    }
   }
 
   renderLineGraph(dataByStore, div_id){
@@ -34,6 +55,8 @@ class LineGraph extends Component {
     var y_max = 0;
     if(this.props.total[1] === 'total'){
       y_max = d3.max(dataByStore, (d) => d3.max(d.values_by_date, (date) => +date.total ) );
+    } else if(this.props.total[1] === 'score'){
+      y_max = d3.max(dataByStore, (d) => d3.max(d.values_by_date, (date) => +date.score ) );
     } else {
       y_max = d3.max(dataByStore, (d) => +d[this.props.total[0]] );
     }
@@ -107,7 +130,6 @@ class LineGraph extends Component {
       .attr("dy", "0.35em")
       .style("font", "10px sans-serif")
       .text( (d) => { return d.store; });
-
   }
 
   renderInteractiveLineGraph(dataByStore, div_id){
@@ -125,6 +147,8 @@ class LineGraph extends Component {
     var y_max = 0;
     if(this.props.total[1] === 'total'){
       y_max = d3.max(dataByStore, (d) => d3.max(d.values_by_date, (date) => +date.total ) );
+    } else if(this.props.total[1] === 'score'){
+      y_max = d3.max(dataByStore, (d) => d3.max(d.values_by_date, (date) => +date.score ) );
     } else {
       y_max = d3.max(dataByStore, (d) => +d[this.props.total[0]] );
     }
@@ -207,31 +231,35 @@ class LineGraph extends Component {
       .text((d) => { return d.store; });
   }
 
+  renderXY(data){
+    return (<XYFrame
+      size={[ 500, 300 ]}
+      lines={data}
+      lineDataAccessor={"values_by_date"}
+      lineStyle={d => ({ fill: d.color, fillOpacity: 0.5, stroke: d.color, strokeWidth: '3px' })}
+      xAccessor={(d) => new Date(d.key)}
+      yAccessor="step_total"
+      lineIDAccessor="key"
+      margin={{"top":60,"bottom":65,"left":60,"right":20}}
+      axes={[
+        { orient: 'left', tickFormat: d => d },
+        { orient: 'bottom', tickFormat: d => d }
+      ]}
+      />);
+  }
+
   render() {
-
-    if(this.props.topData && this.props.topData.length > 0){
-      this.renderLineGraph(this.props.topData, "#top-data-line");
-    }
-
-    if(this.props.bottomData && this.props.bottomData.length > 0){
-      this.renderLineGraph(this.props.bottomData, "#bottom-data-line");
-    }
-
-    if(this.props.selectedStores && this.props.selectedStores.length > 0){
-      this.renderInteractiveLineGraph(this.props.selectedStores, "#select-data-line");
-    }
-
     return (
       <div className="line-data-page">
         <div className="line-data">
           <div className="bottom-top">
             <div>
               <h3>Top 5</h3>
-              <div id="bottom-data-line" className="bottom-data-line" />
+                <div id="top-data-line" className="top-data-line" />
             </div>
             <div>
               <h3>Bottom 5</h3>
-              <div id="top-data-line" className="top-data-line" />
+                <div id="bottom-data-line" className="bottom-data-line" />
             </div>
           </div>
           <h3>Selected Stores</h3>

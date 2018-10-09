@@ -1,5 +1,6 @@
 import React, { Component } from "react";
 import * as d3 from "d3";
+import { withRouter } from "react-router-dom";
 
 import "./DataHub.css";
 import LineGraph from "./Components/LineGraph";
@@ -10,8 +11,6 @@ import moment from 'moment';
 
 const { Option } = Select;
 const dateFormat = 'YYYY/MM/DD';
-
-var d3ScaleChromatic = require("d3-scale-chromatic");
 
 class DataHub extends Component {
   constructor(props) {
@@ -25,7 +24,6 @@ class DataHub extends Component {
       sortedInfo: null,
       startValue: moment('08/01/2018'),
       endValue: moment('08/29/2018'),
-      endOpen: false,
       date_range: null,
       accepted_date_range: null,
       graphDisplayTotal: ["total_weight", "step_total"]
@@ -33,8 +31,50 @@ class DataHub extends Component {
   }
 
   componentDidUpdate(prevProps, prevState){
+    if(prevState.startValue !== this.state.startValue || prevState.endValue !== this.state.endValue){
+      const { dataByStore } = this.state;
+
+      var top10_temp = dataByStore.slice(0, 10);
+      var bottom10_temp = dataByStore.slice(dataByStore.length - 10);
+
+      var top10new = top10_temp.map((store) => {
+        var newStore = {...store};
+        newStore.values_by_date = store.values_by_date.filter((a) => {
+          return (new Date(a.key) >= this.state.startValue.toDate() && new Date(a.key) <= this.state.endValue);
+        });
+        return newStore;
+      });
+
+      var bottom10new = bottom10_temp.map((store) => {
+        var newStore = {...store};
+        newStore.values_by_date = store.values_by_date.filter((a) => {
+          return (new Date(a.key) >= this.state.startValue.toDate() && new Date(a.key) <= this.state.endValue);
+        });
+        return newStore;
+      });
+
+      var currentSelectedStores = [];
+      this.state.selectedStores.forEach( (store) => {
+        currentSelectedStores.push(this.props.dataByStoreHashMap[`${store.key}`]);
+      });
+
+      var selectedStores = [];
+      currentSelectedStores.forEach((store) => {
+        var newStore = {...store};
+        newStore.values_by_date = store.values_by_date.filter((a) => {
+          return (new Date(a.key) >= this.state.startValue.toDate() && new Date(a.key) <= this.state.endValue);
+        });
+        selectedStores.push(newStore);
+      });
+
+      //console.log("datahub data loaded", bottom10new, top10new);
+      this.setState({
+        selectedStores: selectedStores,
+        top10: top10new,
+        bottom10: bottom10new
+      });
+    }
     if(prevProps.dataByStore !== this.props.dataByStore){
-      console.log("data loaded", this.props.dataByStore);
 
       var keys = this.props.dataByStore.map(s => +s.store);
       // var colorScale = d3.scaleOrdinal()
@@ -51,6 +91,7 @@ class DataHub extends Component {
       var bottom10 = dataByStore.slice(dataByStore.length - 10);
 
       this.setState({
+        dataByStore: dataByStore,
         keys: keys,
         date_range: data_date_extent,
         accepted_date_range: data_date_extent,
@@ -73,22 +114,6 @@ class DataHub extends Component {
     }
   }
 
-  disabledStartDate = (startValue) => {
-    const { accepted_date_range, endValue } = this.state;
-    if (!startValue || !endValue) {
-      return false;
-    }
-    return startValue.valueOf() > endValue.valueOf() && startValue >= accepted_date_range[0] && startValue <= accepted_date_range[1];
-  }
-
-  disabledEndDate = (endValue) => {
-    const { accepted_date_range, startValue } = this.state;
-    if (!endValue || !startValue) {
-      return false;
-    }
-    return endValue.valueOf() <= startValue.valueOf() && endValue >= accepted_date_range[0] && endValue <= accepted_date_range[1];
-  }
-
   onChange = (field, value) => {
     this.setState({
       [field]: value,
@@ -96,7 +121,6 @@ class DataHub extends Component {
   }
 
   onStartChange = (value) => {
-    const { endValue } = this.state;
     this.onChange('startValue', value);
   }
 
@@ -104,18 +128,12 @@ class DataHub extends Component {
     this.onChange('endValue', value);
   }
 
-  handleStartOpenChange = (open) => {
-    if (!open) {
-      this.setState({ endOpen: true });
-    }
-  }
-
-  handleEndOpenChange = (open) => {
-    this.setState({ endOpen: open });
-  }
-
   handleChangeGraphType = (value) => {
-    if(value === "step_total"){
+    if(value === "performance"){
+      this.setState({
+        graphDisplayTotal: ["score", "score"]
+      });
+    } else if(value === "step_total"){
       this.setState({
         graphDisplayTotal: ["total_weight", "step_total"]
       });
@@ -135,9 +153,88 @@ class DataHub extends Component {
     return false;
   }
 
+  handleChangeTable = (pagination, filters, sorter) => {
+    // console.log('Various parameters', pagination, filters, sorter);
+    this.setState({
+      filteredInfo: filters,
+      sortedInfo: sorter,
+    });
+  }
+
+  clearFilters = () => {
+    this.setState({ filteredInfo: null });
+  }
+
+  clearAll = () => {
+    this.setState({
+      filteredInfo: null,
+      sortedInfo: null,
+    });
+  }
+
+  setWeightSort = () => {
+    this.setState({
+      sortedInfo: {
+        order: 'descend',
+        columnKey: 'total_weight',
+      },
+    });
+  }
+
   render() {
+    const { startValue, endValue } = this.state;
+
+
     let { sortedInfo, filteredInfo } = this.state;
-    const { startValue, endValue, endOpen } = this.state;
+    sortedInfo = sortedInfo || {};
+    filteredInfo = filteredInfo || {};
+
+
+    const columns = [{
+      title: 'Store',
+      dataIndex: 'store',
+      key: 'store',
+      sorter: (a, b) => {
+        return a.store - b.store;
+      },
+      sortOrder: sortedInfo.columnKey === 'store' && sortedInfo.order,
+      render: store => <a>{store}</a>,
+    }, {
+      title: 'Total Weight (lbs)',
+      dataIndex: 'total_weight',
+      key: 'total_weight',
+      sorter: (a, b) => {
+        return a.total_weight - b.total_weight;
+      },
+      sortOrder: sortedInfo.columnKey === 'total_weight' && sortedInfo.order,
+      render: weight => {
+        return (<a>{weight}</a>);
+      }
+    }, {
+      title: 'Score (lbs/sales)',
+      dataIndex: 'score',
+      key: 'score',
+      sorter: (a, b) => {
+        return a.score - b.score;
+      },
+      sortOrder: sortedInfo.columnKey === 'score' && sortedInfo.order,
+      render: score => {
+        return (<a>{(parseFloat(score)).toFixed(2)}%</a>);
+      }
+    }, {
+      title: 'Sales',
+      dataIndex: 'sales',
+      key: 'sales',
+      sorter: (a, b) => {
+        return a.sales - b.sales;
+      },
+      sortOrder: sortedInfo.columnKey === 'sales' && sortedInfo.order,
+      render: sales => {
+        return (<a>{sales}</a>);
+      }
+    }];
+
+
 
     let keyOptions = [];
     if(this.state.keys && this.state.keys.length > 0)
@@ -172,7 +269,6 @@ class DataHub extends Component {
                 value={startValue}
                 placeholder="Start"
                 onChange={this.onStartChange}
-                onOpenChange={this.handleStartOpenChange}
               />
               <DatePicker
                 disabledDate={this.disabledEndDate}
@@ -181,8 +277,6 @@ class DataHub extends Component {
                 value={endValue}
                 placeholder="End"
                 onChange={this.onEndChange}
-                open={endOpen}
-                onOpenChange={this.handleEndOpenChange}
               />
             <Select
               showSearch
@@ -201,16 +295,22 @@ class DataHub extends Component {
             >
               <Option key={"step_total"} >Monthly Progress</Option>
               <Option key={"total"} >Weight Per Day</Option>
+              <Option key={"performance"} >Performance</Option>
             </Select>
           </div>
         </div>
 
         <div className="data-table">
-
+          <h1>Overview</h1>
+          {
+            (this.props.dataByStore && this.props.dataByStore.length > 0)?
+              <Table style={{color: "#000"}} columns={columns} dataSource={this.props.dataByStore} onChange={this.handleChangeTable} size="middle" />:
+              null
+          }
         </div>
       </div>
     );
   }
 }
 
-export default DataHub;
+export default withRouter(DataHub);
