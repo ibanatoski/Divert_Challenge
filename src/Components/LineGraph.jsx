@@ -1,6 +1,9 @@
 import React, { Component } from "react";
 import * as d3 from "d3";
 import "./LineGraph.css";
+import {withFauxDOM} from 'react-faux-dom';
+
+import ReactFauxDOM from 'react-faux-dom';
 
 import { XYFrame } from "semiotic";
 
@@ -21,7 +24,8 @@ class LineGraph extends Component {
     };
   }
 
-  componentDidMount(){
+  componentDidMount () {
+
   }
 
   componentDidUpdate (prevProps, prevState){
@@ -34,9 +38,11 @@ class LineGraph extends Component {
       this.renderLineGraph(this.props.bottomData, "#bottom-data-line");
     }
 
-    if(this.props.selectedStores && this.props.selectedStores.length > 0){
-      d3.select("#select-data-line").html("");
-      this.renderInteractiveLineGraph(this.props.selectedStores, "#select-data-line");
+    if( (this.props.selectedStores && this.props.selectedStores !== prevProps.selectedStores && this.props.selectedStores.length > 0 ) ||
+        (this.props.total && this.props.total !== prevProps.total) ||
+        (this.props.selectedStores && this.props.selectedStores !== prevProps.selectedStores && this.props.selectedStores.length > 0 ) ){
+      d3.select("#select_data_line").html("");
+      this.renderInteractiveLineGraph(this.props.selectedStores, "select_data_line");
     }
   }
 
@@ -45,8 +51,7 @@ class LineGraph extends Component {
 
     var margin = {top: 5, right: 40, bottom: 30, left: 50},
     width = (500) - margin.left - margin.right,
-    height = 300 - margin.top - margin.bottom,
-    barWidth = Math.floor(width / dataByStore.length) - 1;
+    height = 200 - margin.top - margin.bottom;
 
     //Set the x & y bounds via scale (how much space there is to draw the viz)
     var x_extent = [0, 0];
@@ -133,14 +138,14 @@ class LineGraph extends Component {
   }
 
   renderInteractiveLineGraph(dataByStore, div_id){
-    d3.select(`${div_id} > svg`).remove();
+    //d3.select('select_data_line').remove('svg');
+
+    const faux = new ReactFauxDOM.createElement('svg');
 
     var margin = {top: 5, right: 40, bottom: 30, left: 50},
     width = (1200) - margin.left - margin.right,
-    height = 500 - margin.top - margin.bottom,
-    barWidth = Math.floor(width / dataByStore.length) - 1;
+    height = 400 - margin.top - margin.bottom;
 
-    //Set the x & y bounds via scale (how much space there is to draw the viz)
     var x_extent = [0, 0];
     x_extent[0] = d3.min(dataByStore, (d) => d3.min(d.values_by_date, (date) => new Date(date.key) ) );
     x_extent[1] = d3.max(dataByStore, (d) => d3.max(d.values_by_date, (date) => new Date(date.key) ) );
@@ -153,7 +158,6 @@ class LineGraph extends Component {
       y_max = d3.max(dataByStore, (d) => +d[this.props.total[0]] );
     }
     // var y_max = d3.max(dataByStore, (d) => d3.max(d.values_by_date, (d) => +d.total ));
-    var x = d3.scaleBand().rangeRound([0, width], .05).padding(0.1);
 
     var xScale = d3.scaleTime()
       .domain(x_extent)
@@ -180,11 +184,11 @@ class LineGraph extends Component {
     .y((d) => { return yScale(d[this.props.total[1]]); });
 
 
-    var svg = d3.select(div_id).append("svg")
-    .attr("width", width + margin.left + margin.right)
-    .attr("height", height + margin.top + margin.bottom)
-    .append("g")
-    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+    var svg = d3.select(faux)
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
     //X Axis Text
     svg.append("g")
@@ -229,6 +233,10 @@ class LineGraph extends Component {
       .attr("dy", "0.35em")
       .style("font", "10px sans-serif")
       .text((d) => { return d.store; });
+
+    return faux;
+
+    this.props.animateFauxDOM(800);
   }
 
   renderXY(data){
@@ -264,10 +272,21 @@ class LineGraph extends Component {
           </div>
           <h3>Selected Stores</h3>
           <div id="select-data-line" className="select-data-line" />
+          <div className="select-line">
+            {
+              (this.props.selectedStores && this.props.selectedStores.length > 0 ) ?
+                this.renderInteractiveLineGraph(this.props.selectedStores, "select_data_line").toReact()
+              :null
+            }
+          </div>
         </div>
       </div>
     );
   }
 }
 
-export default LineGraph;
+LineGraph.defaultProps = {
+  select_data_line: 'loading'
+}
+
+export default withFauxDOM(LineGraph);

@@ -5,6 +5,7 @@ import { Route, Switch } from "react-router-dom";
 import './App.css';
 import dataSheet from './Data/cardboard_table1.csv';
 import salesSheet from './Data/sales_Table1.csv';
+import output from './Data/output.csv';
 
 import Home from './Home.jsx';
 import Frequency from './Frequency.jsx';
@@ -33,13 +34,13 @@ class App extends Component {
 
       Promise.all([
           d3.csv(dataSheet),
-          d3.csv(salesSheet),
+          d3.csv(salesSheet)
       ]).then((files) => {
         var data = files[0];
         var sales = files[1];
 
         // console.log("data", data);
-        // console.log("sales", sales);
+        // console.log("dataByStore", files[2]);
 
         //sales hashmap
         var salesHashMap = {};

@@ -31,6 +31,7 @@ class DataHub extends Component {
   }
 
   componentDidUpdate(prevProps, prevState){
+
     if(prevState.startValue !== this.state.startValue || prevState.endValue !== this.state.endValue){
       const { dataByStore } = this.state;
 
@@ -253,7 +254,6 @@ class DataHub extends Component {
                 topData={this.state.top10Stores}
                 bottomData={this.state.bottom10Stores}
                 selectedStores={this.state.selectedStores}
-                dataByStore={this.props.dataByStore}
                 total={this.state.graphDisplayTotal}
                 />:
               <div className="data-display-placeholder" />
