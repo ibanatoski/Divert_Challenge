@@ -23,13 +23,13 @@ class SideBarMenu extends Component {
           <Link to="/stores"><Icon type="bar-chart" />Stores</Link>
         </Menu.Item>
         <Menu.Item key="/frequency">
-          <Link to="/frequency"><Icon type="line-chart" />All Stores</Link>
+          <Link to="/frequency"><Icon type="line-chart" />Frequency</Link>
         </Menu.Item>
         <Menu.Item key="/datahub">
           <Link to="/datahub"><Icon type="line-chart" />Compare Stores</Link>
         </Menu.Item>
-        <Menu.Item key="/stackedbar">
-          <Link to="/stackedbar"><Icon type="bar-chart" />Stacked Bar</Link>
+        <Menu.Item key="/performance">
+          <Link to="/performance"><Icon type="bar-chart" />All Stores</Link>
         </Menu.Item>
       </Menu>
     );

@@ -255,7 +255,12 @@ class BarChartMonth extends Component {
   render() {
 
     if(this.props.dataByStore && this.props.dataByStore.length > 0){
-      this.renderLineGraph(this.props.data, this.props.dataByStore);
+      //this.renderLineGraph(this.props.data, this.props.dataByStore);
+    }
+
+    if(this.props.dataByDate && this.props.dataByDate.length > 0){
+      // console.log("data loaded", this.props.dataByDate);
+      this.renderStackedBar(this.props.dataByDate);
     }
 
     return (
