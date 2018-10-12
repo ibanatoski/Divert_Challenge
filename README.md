@@ -5,16 +5,16 @@ Data-viz challenge for Divert
 ## Instructions
 To run the application simply follow these steps...
 
-### Clone the Repo
+### Clone the Repo and enter the directory
 ```
-git clone https://github.com/ibanatoski/Divert_Challenge.git
-cd Divert_Challenge
+$ git clone https://github.com/ibanatoski/Divert_Challenge.git
+$ cd Divert_Challenge
 ```
-### Install the necessary packages
+### Install the necessary packages / build the project / run the app
 ```
-npm install
-npm build
-npm start
+$ npm install
+$ npm build
+$ npm start
 ```
 ---
 
