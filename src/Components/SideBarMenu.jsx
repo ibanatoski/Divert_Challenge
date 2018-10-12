@@ -7,7 +7,8 @@ import { Menu, Icon } from 'antd';
 class SideBarMenu extends Component {
   constructor(props) {
     super(props);
-    this.state = {};
+    this.state = {
+    };
   }
 
   render() {
@@ -28,9 +29,11 @@ class SideBarMenu extends Component {
         <Menu.Item key="/datahub">
           <Link to="/datahub"><Icon type="line-chart" />Compare Stores</Link>
         </Menu.Item>
-        <Menu.Item key="/performance">
-          <Link to="/performance"><Icon type="bar-chart" />All Stores</Link>
-        </Menu.Item>
+        {
+        // <Menu.Item key="/performance">
+        //   <Link to="/performance"><Icon type="bar-chart" />All Stores</Link>
+        // </Menu.Item>
+      }
       </Menu>
     );
   }

@@ -4,8 +4,15 @@ import { withRouter } from "react-router-dom";
 
 import "./DataHub.css";
 import LineGraph from "./Components/LineGraph";
+import BarCharts from "./Components/BarCharts";
+import ToolTip from "./Components/ToolTip";
+import AreaChartReact from './Components/AreaChartReact';
+import AreaCharts from "./Components/AreaCharts";
+import InteractiveLineChart from './Components/InteractiveLineChart.jsx';
 
-import { Table, DatePicker, Select } from 'antd';
+//import { XYFrame } from "semiotic";
+
+import { Table, DatePicker, Select, Checkbox } from 'antd';
 
 import moment from 'moment';
 
@@ -26,11 +33,17 @@ class DataHub extends Component {
       endValue: moment('08/29/2018'),
       date_range: null,
       accepted_date_range: null,
-      graphDisplayTotal: ["total_weight", "step_total"]
+      graphDisplayTotal: ["total_weight", "step_total"],
+      avgData: null
     };
   }
 
   componentDidUpdate(prevProps, prevState){
+    if(this.props.monthlyStoreWeightSummary !== prevProps.monthlyStoreWeightSummary){
+      this.setState({
+        avgData: this.props.monthlyStoreWeightSummary
+      });
+    }
 
     if(prevState.startValue !== this.state.startValue || prevState.endValue !== this.state.endValue){
       const { dataByStore } = this.state;
@@ -58,6 +71,7 @@ class DataHub extends Component {
       this.state.selectedStores.forEach( (store) => {
         currentSelectedStores.push(this.props.dataByStoreHashMap[`${store.key}`]);
       });
+      console.log("current selected stores", currentSelectedStores);
 
       var selectedStores = [];
       currentSelectedStores.forEach((store) => {
@@ -85,8 +99,8 @@ class DataHub extends Component {
       // this.props.dataByStore.forEach((d) => d.color = colorScale(d.store));
 
       var dataByStore = this.props.dataByStore.sort((a, b) => b.total_weight - a.total_weight);
-      var max_date = d3.max(dataByStore, (d) => d3.max(d.values_by_date, (date) => new Date(date.key)) ),
-          min_date = d3.min(dataByStore, (d) => d3.min(d.values_by_date, (date) => new Date(date.key)) );
+      var max_date = new Date(this.state.endValue),
+          min_date = new Date(this.state.startValue);
       var data_date_extent = [min_date, max_date];
       var top10 = dataByStore.slice(0, 10);
       var bottom10 = dataByStore.slice(dataByStore.length - 10);
@@ -109,38 +123,70 @@ class DataHub extends Component {
       value.forEach( (d) => {
         stores.push( this.props.dataByStoreHashMap[d] );
       })
+
+      var processedSelectedStores = [];
+      stores.forEach( (store) => {
+        var newStore = { ...store }
+        newStore.values_by_date = store.values_by_date.filter( (day) => ( (new Date(day.key) >= new Date(this.state.startValue)) && (new Date(day.key) <= new Date(this.state.endValue)) ) );
+        processedSelectedStores.push(newStore);
+      });
+
+      var processedSelectedDates = [];
+      this.props.dataByDate.forEach( (date) => {
+        if( (new Date(date.key) >= new Date(this.state.startValue)) && (new Date(date.key) <= new Date(this.state.endValue)) ){
+          var newDate = {... date};
+          newDate.store_day_totals = date.store_day_totals.filter( (store) => value.includes(store.key));
+          processedSelectedDates.push(newDate);
+        }
+      });
+      console.log("processedSelectedDates", processedSelectedDates);
+
       this.setState({
-        selectedStores: stores
+        selectedStores: processedSelectedStores,
+        selectedDates: processedSelectedDates,
       });
     }
   }
 
   onChange = (field, value) => {
     this.setState({
-      [field]: value,
+      [field]: value
+    });
+  }
+
+  onCheckBoxChange = (e) => {
+    this.setState({
+      [e.target.name]: e.target.checked
     });
   }
 
   onStartChange = (value) => {
-    this.onChange('startValue', value);
+    if(new Date(value) < this.state.endValue && new Date(value) > d3.min(this.props.dataByDate, (date) => new Date(date.key) )){
+      this.onChange('startValue', value);
+    }
   }
 
   onEndChange = (value) => {
-    this.onChange('endValue', value);
+    if(new Date(value) > this.state.startValue && new Date(value) < d3.max(this.props.dataByDate, (date) => new Date(date.key) )){
+      this.onChange('endValue', value);
+    }
   }
 
   handleChangeGraphType = (value) => {
     if(value === "performance"){
       this.setState({
-        graphDisplayTotal: ["score", "score"]
+        graphDisplayTotal: ["score", "score"],
+        avgData: this.props.monthlyStoreScoreSummary
       });
     } else if(value === "step_total"){
       this.setState({
-        graphDisplayTotal: ["total_weight", "step_total"]
+        graphDisplayTotal: ["total_weight", "step_total"],
+        avgData: this.props.monthlyStoreWeightSummary
       });
     }else {
       this.setState({
-        graphDisplayTotal: ["total_weight", "total"]
+        graphDisplayTotal: ["total_weight", "total"],
+        avgData: this.props.dailyStoreWeightSummary
       });
     }
   }
@@ -244,18 +290,30 @@ class DataHub extends Component {
     // var storeNames = this.props.stores;
     // var storeNamesLoaded = (this.props.stores && this.props.stores.length > 0);
 
+    //console.log("render", this.state.selectedStores);
+
     return (
       <div className="datahub-page">
         <div className="data-display">
+          <h1>Selected Stores</h1>
+          <h3>Number of Weight Readings</h3>
           {
-            (this.props.dataByStore && this.props.dataByStore.length > 0)?
-              <LineGraph
-                data={this.props.data}
-                topData={this.state.top10Stores}
-                bottomData={this.state.bottom10Stores}
-                selectedStores={this.state.selectedStores}
-                total={this.state.graphDisplayTotal}
+            (this.state.selectedStores && this.state.selectedStores.length > 0)?
+              <AreaCharts
+                data={this.state.selectedStores}
+                dateRange={[this.state.startValue, this.state.endValue]}
                 />:
+                <div className="data-display-placeholder" />
+          }
+          <h3>Weight/Progress Analysis</h3>
+          {
+            (this.state.avgData && this.state.selectedStores && this.state.selectedStores.length > 0)?
+              <InteractiveLineChart
+                data={this.state.selectedStores}
+                selector={this.state.graphDisplayTotal}
+                average_data={(this.state.showAverage) ? this.state.avgData : null}
+                dateRange={[this.state.startValue, this.state.endValue]}
+                title={"hello"} />:
               <div className="data-display-placeholder" />
           }
         </div>
@@ -297,11 +355,12 @@ class DataHub extends Component {
               <Option key={"total"} >Weight Per Day</Option>
               <Option key={"performance"} >Performance</Option>
             </Select>
+            <Checkbox onChange={this.onCheckBoxChange} name="showAverage">Overlay Average</Checkbox>
           </div>
         </div>
 
         <div className="data-table">
-          <h1>Overview</h1>
+          <h1>Monthly Overview</h1>
           {
             (this.props.dataByStore && this.props.dataByStore.length > 0)?
               <Table style={{color: "#000"}} columns={columns} dataSource={this.props.dataByStore} onChange={this.handleChangeTable} size="middle" />:

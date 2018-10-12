@@ -27,7 +27,7 @@ class BarChartMonth extends Component {
     //console.log('store data', storeName, data);
 
     var margin = {top: 20, right: 40, bottom: 60, left: 100},
-    width = Math.max((data.length * 10) - margin.left - margin.right, 500),
+    width = Math.max((data.length * 10) - margin.left - margin.right, 500)*2,
     height = 500 - margin.top - margin.bottom,
     barWidth = 20;
 

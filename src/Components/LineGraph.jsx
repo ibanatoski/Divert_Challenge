@@ -1,11 +1,13 @@
 import React, { Component } from "react";
 import * as d3 from "d3";
 import "./LineGraph.css";
-import {withFauxDOM} from 'react-faux-dom';
+// import {withFauxDOM} from 'react-faux-dom';
 
 import ReactFauxDOM from 'react-faux-dom';
 
-import { XYFrame } from "semiotic";
+// import { XYFrame } from "semiotic";
+
+import InteractiveLineChart from './InteractiveLineChart.jsx';
 
 var d3ScaleChromatic = require("d3-scale-chromatic");
 
@@ -30,20 +32,20 @@ class LineGraph extends Component {
 
   componentDidUpdate (prevProps, prevState){
     //console.log('Component did Update', this.props.selectedStores);
-    if(this.props.topData && this.props.topData.length > 0){
-      this.renderLineGraph(this.props.topData, "#top-data-line");
-    }
+    // if(this.props.topData && this.props.topData.length > 0){
+    //   this.renderLineGraph(this.props.topData, "#top-data-line");
+    // }
+    //
+    // if(this.props.bottomData && this.props.bottomData.length > 0){
+    //   this.renderLineGraph(this.props.bottomData, "#bottom-data-line");
+    // }
 
-    if(this.props.bottomData && this.props.bottomData.length > 0){
-      this.renderLineGraph(this.props.bottomData, "#bottom-data-line");
-    }
-
-    if( (this.props.selectedStores && this.props.selectedStores !== prevProps.selectedStores && this.props.selectedStores.length > 0 ) ||
-        (this.props.total && this.props.total !== prevProps.total) ||
-        (this.props.selectedStores && this.props.selectedStores !== prevProps.selectedStores && this.props.selectedStores.length > 0 ) ){
-      d3.select("#select_data_line").html("");
-      this.renderInteractiveLineGraph(this.props.selectedStores, "select_data_line");
-    }
+    // if( (this.props.selectedStores && this.props.selectedStores !== prevProps.selectedStores && this.props.selectedStores.length > 0 ) ||
+    //     (this.props.total && this.props.total !== prevProps.total) ||
+    //     (this.props.selectedStores && this.props.selectedStores !== prevProps.selectedStores && this.props.selectedStores.length > 0 ) ){
+    //   d3.select("#select_data_line").html("");
+    //   this.renderInteractiveLineGraph(this.props.selectedStores, "select_data_line");
+    // }
   }
 
   renderLineGraph(dataByStore, div_id){
@@ -150,6 +152,8 @@ class LineGraph extends Component {
     x_extent[0] = d3.min(dataByStore, (d) => d3.min(d.values_by_date, (date) => new Date(date.key) ) );
     x_extent[1] = d3.max(dataByStore, (d) => d3.max(d.values_by_date, (date) => new Date(date.key) ) );
     var y_max = 0;
+
+
     if(this.props.total[1] === 'total'){
       y_max = d3.max(dataByStore, (d) => d3.max(d.values_by_date, (date) => +date.total ) );
     } else if(this.props.total[1] === 'score'){
@@ -213,6 +217,37 @@ class LineGraph extends Component {
         .style("text-anchor", "end")
         .text("Weight (lbs)");
 
+    var min = (d) => yScale(d.store_weight_min);
+    var max = (d) => yScale(d.store_weight_max);
+    var avg = (d) => yScale(d.store_weight_avg);
+
+    var area = d3.area()
+    	.x((d)=>xScale(new Date(d.key)))
+    	.y0((d) => max(d))
+    	.y1((d) => min(d))
+  		.curve(d3.curveNatural);
+
+    svg.append('path')
+    	.attr('d', area(this.props.dayMetrics))
+    	.attr('fill', '#ddd');
+
+    var avgLine = d3.line()
+      .curve(d3.curveNatural)
+      .x((d)=>xScale(new Date(d.key)))
+      .y((d) => yScale(d.store_weight_avg));
+
+    svg.append("path")
+      .attr('d', avgLine(this.props.dayMetrics))
+      .attr("fill", "none")
+      .style("stroke", "darkGray");
+
+    svg.append("text")
+        .attr("transform", "translate(" + xScale(new Date(this.props.dayMetrics[this.props.dayMetrics.length - 1].key) ) + "," + yScale(this.props.dayMetrics[this.props.dayMetrics.length - 1].store_weight_avg) + ")" )
+        .attr("x", 3)
+        .attr("dy", "0.35em")
+        .style("font", "10px sans-serif")
+        .text("avg");
+
     var store = svg.selectAll(".store")
     .data(dataByStore)
     .enter().append("g")
@@ -221,7 +256,8 @@ class LineGraph extends Component {
     store.append("path")
       .attr("class", "line")
       .attr("d", (d) => { return line(d.values_by_date); })
-      .style("stroke", (d) => d.color);
+      .style("stroke", (d) => d.color)
+			.attr("stroke-width", 2);
 
     //line graph
     store.append("text")
@@ -235,50 +271,40 @@ class LineGraph extends Component {
       .text((d) => { return d.store; });
 
     return faux;
-
-    this.props.animateFauxDOM(800);
   }
 
   renderXY(data){
-    return (<XYFrame
-      size={[ 500, 300 ]}
-      lines={data}
-      lineDataAccessor={"values_by_date"}
-      lineStyle={d => ({ fill: d.color, fillOpacity: 0.5, stroke: d.color, strokeWidth: '3px' })}
-      xAccessor={(d) => new Date(d.key)}
-      yAccessor="step_total"
-      lineIDAccessor="key"
-      margin={{"top":60,"bottom":65,"left":60,"right":20}}
-      axes={[
-        { orient: 'left', tickFormat: d => d },
-        { orient: 'bottom', tickFormat: d => d }
-      ]}
-      />);
+    // return (<XYFrame
+    //   size={[ 500, 300 ]}
+    //   lines={data}
+    //   lineDataAccessor={"values_by_date"}
+    //   lineStyle={d => ({ fill: d.color, fillOpacity: 0.5, stroke: d.color, strokeWidth: '3px' })}
+    //   xAccessor={(d) => new Date(d.key)}
+    //   yAccessor="step_total"
+    //   lineIDAccessor="key"
+    //   margin={{"top":60,"bottom":65,"left":60,"right":20}}
+    //   axes={[
+    //     { orient: 'left', tickFormat: d => d },
+    //     { orient: 'bottom', tickFormat: d => d }
+    //   ]}
+    //   />);
   }
 
   render() {
     return (
       <div className="line-data-page">
         <div className="line-data">
-          <div className="bottom-top">
-            <div>
-              <h3>Top 5</h3>
-                <div id="top-data-line" className="top-data-line" />
-            </div>
-            <div>
-              <h3>Bottom 5</h3>
-                <div id="bottom-data-line" className="bottom-data-line" />
-            </div>
-          </div>
-          <h3>Selected Stores</h3>
-          <div id="select-data-line" className="select-data-line" />
-          <div className="select-line">
-            {
-              (this.props.selectedStores && this.props.selectedStores.length > 0 ) ?
-                this.renderInteractiveLineGraph(this.props.selectedStores, "select_data_line").toReact()
-              :null
-            }
-          </div>
+          {
+            (this.props.dayMetrics && this.props.selectedStores && this.props.selectedStores.length > 0 ) ?
+              <InteractiveLineChart
+              data={this.props.selectedStores}
+              selector={this.props.total}
+              average_data={this.props.dayMetrics}
+              title={"hello"} />
+            :null
+          }
+
+
         </div>
       </div>
     );
@@ -289,4 +315,4 @@ LineGraph.defaultProps = {
   select_data_line: 'loading'
 }
 
-export default withFauxDOM(LineGraph);
+export default LineGraph;

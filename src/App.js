@@ -71,6 +71,9 @@ class App extends Component {
           .domain(keys)
           .range(d3ScaleChromatic.schemeSpectral[9]);
 
+        var colorHashMap = {};
+
+
         dataByStore.forEach( (store) => {
           var total = 0;
           store.values.forEach( (entry) => {
@@ -78,14 +81,13 @@ class App extends Component {
           });
           store.total_weight = total;
           store.color = colorScale(parseInt(store.key));
+          colorHashMap[store.key] = colorScale(parseInt(store.key));
         });
 
         dataByStore.forEach((d) => {
           d.values_by_date = d3.nest().key(function(d) { return d.date_seen; })
           .entries(d.values);
         });
-
-
 
         dataByStore.forEach( (store) => {
           var stepTotal = 0;
@@ -99,7 +101,7 @@ class App extends Component {
             date.total = total;
             date.step_total = stepTotal;
             date.sales_total_month = +salesHashMap[store.key];
-            date.score = (stepTotal / +salesHashMap[store.key]) * 100;
+            date.score = (stepTotal / (+salesHashMap[store.key] / 29));
           });
         });
 
@@ -115,6 +117,7 @@ class App extends Component {
         });
 
         dataByDate.forEach((d) => {
+          var storeTotal = 0;
           d.store_day_totals.forEach( (store) => {
             var total = 0;
             store.values.forEach((val) => {
@@ -123,7 +126,26 @@ class App extends Component {
             store.color = colorScale(parseInt(store.store))
             store.store = parseInt(store.key);
             store.total = total;
+            storeTotal += total;
           });
+          d.store_sum = storeTotal;
+          d.store_weight_avg = storeTotal / d.store_day_totals.length;
+          d.store_weight_max = d3.max(d.store_day_totals, (val) => val.total);
+          d.store_weight_min = d3.min(d.store_day_totals, (val) => val.total);
+          d.store_weight_median = (( d3.max(d.store_day_totals, (val) => val.total) + d3.min(d.store_day_totals, (val) => val.total)) / 2);
+        });
+
+        var dailyStoreWeightSummary = [];
+        dataByDate.forEach((date) => {
+          var dateSum = {};
+          dateSum.avg = date.store_weight_avg;
+          dateSum.sum = date.store_sum;
+          dateSum.median = date.store_weight_median;
+          dateSum.max = date.store_weight_max;
+          dateSum.min = date.store_weight_min;
+          dateSum.date = new Date(date.key);
+          dateSum.key = date.key;
+          dailyStoreWeightSummary.push(dateSum);
         });
 
         var dataByStoreHashMap = {};
@@ -151,9 +173,22 @@ class App extends Component {
           dataByDateHashMap[d.key].dayTotal= total;
         });
 
+        var monthlyStoreWeightSummary = [];
+
+        var store_month_total_weight = 0;
+        dataByDate.forEach((date) => {
+          var dateSum = {};
+          store_month_total_weight += date.store_sum;
+
+          dateSum.sum = store_month_total_weight;
+          dateSum.avg = (store_month_total_weight / date.store_day_totals.length);
+          dateSum.key = date.key;
+          monthlyStoreWeightSummary.push(dateSum);
+        });
+
         sales.forEach( (d) => {
           dataByStoreHashMap[d.store].sales = d.sales;
-          dataByStoreHashMap[d.store].score = (dataByStoreHashMap[d.store].total / d.sales)? (dataByStoreHashMap[d.store].total / d.sales) * 100 : 0;
+          dataByStoreHashMap[d.store].score = (dataByStoreHashMap[d.store].total / d.sales)? (dataByStoreHashMap[d.store].total / (d.sales / 29)) : 0;
         });
 
         var output = [];
@@ -175,6 +210,35 @@ class App extends Component {
           return (a - b);
         });
 
+        var monthlyStoreScoreSummary = [];
+        var store_month_total_score = 0;
+        var salesSum = 0;
+        sales.forEach((record) =>
+          salesSum += record.sales
+        );
+        dataByDate.forEach((date) => {
+          var dateSum = {};
+          var performanceSum = 0;
+          var i = 0;
+          dataByStore.forEach((store) => {
+            var store_monthly_progress_weight = 0;
+            store.values_by_date.forEach( (val_date) => {
+              if(date.key == val_date.key){
+                store_monthly_progress_weight += val_date.step_total;
+                i++;
+              }
+            });
+            if(store_monthly_progress_weight > 0){
+              performanceSum += store_monthly_progress_weight / (salesHashMap[store.key] / (29*store.values_by_date.length));
+            }
+          });
+          store_month_total_score += performanceSum / dataByStore.length;
+          dateSum.sum = store_month_total_score;
+          dateSum.avg = (store_month_total_score / i);
+          dateSum.key = date.key;
+          monthlyStoreScoreSummary.push(dateSum);
+        });
+
         this.setState({
           data: data,
           dataByStore: output,
@@ -182,7 +246,12 @@ class App extends Component {
           dataByDateHashMap: dataByDateHashMap,
           dataByDate: dataByDate,
           dataCounts: dataCounts,
-          storeNames: storeNames
+          storeNames: storeNames,
+          sales: sales,
+          dailyStoreWeightSummary: dailyStoreWeightSummary,
+          monthlyStoreWeightSummary: monthlyStoreWeightSummary,
+          monthlyStoreScoreSummary: monthlyStoreScoreSummary,
+          colorHashMap: colorHashMap
         });
 
 
@@ -196,7 +265,18 @@ class App extends Component {
   }
 
   render() {
-    const { storeNames, dataByStore, data, dataByDate, dataByStoreHashMap, dataByDateHashMap } = this.state;
+    const {
+      colorHashMap,
+      storeNames,
+      dataByStore,
+      data,
+      dataByDate,
+      dataByStoreHashMap,
+      dataByDateHashMap,
+      dailyStoreWeightSummary,
+      monthlyStoreWeightSummary,
+      monthlyStoreScoreSummary
+    } = this.state;
 
     return (
       <div className="App">
@@ -214,7 +294,7 @@ class App extends Component {
                   <Route
                     path="/"
                     exact
-                    render={props => <Home stores={storeNames} data={data} dataByStore={dataByStoreHashMap} {...props} />}
+                    render={props => <DataHub colorHashMap={colorHashMap} monthlyStoreScoreSummary={monthlyStoreScoreSummary} monthlyStoreWeightSummary={monthlyStoreWeightSummary} dailyStoreWeightSummary={dailyStoreWeightSummary} storeNames={storeNames} data={data} dataByStoreHashMap={dataByStoreHashMap} dataByStore={dataByStore} dataByDate={dataByDate} {...props} />}
                   />
                   <Route
                     path="/stores"
@@ -229,7 +309,7 @@ class App extends Component {
                   <Route
                     path="/datahub"
                     exact
-                    render={props => <DataHub storeNames={storeNames} data={data} dataByStoreHashMap={dataByStoreHashMap} dataByStore={dataByStore} dataByDate={dataByDate} {...props} />}
+                    render={props => <DataHub colorHashMap={colorHashMap} monthlyStoreScoreSummary={monthlyStoreScoreSummary} monthlyStoreWeightSummary={monthlyStoreWeightSummary} dailyStoreWeightSummary={dailyStoreWeightSummary} storeNames={storeNames} data={data} dataByStoreHashMap={dataByStoreHashMap} dataByStore={dataByStore} dataByDate={dataByDate} {...props} />}
                   />
                   <Route
                     path="/performance"
