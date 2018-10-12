@@ -13,7 +13,7 @@ $ cd Divert_Challenge
 ### Install the necessary packages / build the project / run the app
 ```
 $ npm install
-$ npm build
+$ npm run build
 $ npm start
 ```
 ---
