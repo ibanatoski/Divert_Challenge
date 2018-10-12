@@ -1,6 +1,23 @@
 # Divert_Challenge
 Data-viz challenge for Divert
 
+---
+## Instructions
+To run the application simply follow these steps...
+
+### Clone the Repo
+```
+git clone https://github.com/ibanatoski/Divert_Challenge.git
+cd Divert_Challenge
+```
+### Install the necessary packages
+```
+npm install
+npm build
+npm start
+```
+---
+
 
 ## Data import
 The provided datasets describe retail store operational data. Build a database that includes a single interface (table or view) that summarizes information across stores.
